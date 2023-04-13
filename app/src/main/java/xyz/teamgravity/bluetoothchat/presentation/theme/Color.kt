@@ -1,4 +1,4 @@
-package xyz.teamgravity.bluetoothchat.ui.theme
+package xyz.teamgravity.bluetoothchat.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
