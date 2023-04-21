@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
+    id 'kotlin-parcelize'
     id 'dagger.hilt.android.plugin'
     id 'com.google.devtools.ksp' version '1.8.10-1.0.9'
 }
@@ -52,14 +53,6 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
-
-    applicationVariants.all { variant ->
-        kotlin.sourceSets {
-            getByName(variant.name) {
-                kotlin.srcDir("build/generated/ksp/${variant.name}/kotlin")
-            }
-        }
-    }
 }
 
 dependencies {
@@ -97,15 +90,23 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 
     // compose destinations
-    implementation 'io.github.raamcosta.compose-destinations:core:1.9.39-beta'
-    ksp 'io.github.raamcosta.compose-destinations:ksp:1.9.39-beta'
+    implementation 'io.github.raamcosta.compose-destinations:core:1.9.40-beta'
+    ksp 'io.github.raamcosta.compose-destinations:ksp:1.9.40-beta'
+
+    // permission
+    implementation 'com.google.accompanist:accompanist-permissions:0.31.0-alpha'
+
+    // timber
+    implementation 'com.jakewharton.timber:timber:5.0.1'
 }
 
 allprojects {
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
         kotlinOptions {
             freeCompilerArgs += [
-                    "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+                    "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                    "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
+                    "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi"
             ]
         }
     }
