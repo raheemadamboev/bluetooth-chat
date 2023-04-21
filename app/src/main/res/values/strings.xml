@@ -1,3 +1,25 @@
 <resources>
     <string name="app_name">Bluetooth Chat</string>
+
+    <!-- Permission -->
+    <string name="grant_bluetooth_permissions">Grant bluetooth permissions</string>
+    <string name="enable_bluetooth">Enable bluetooth</string>
+    <string name="lets_chat">Let\'s chat</string>
+    <string name="grant_location_permissions">Grant location permissions</string>
+    <string name="enable_location">Enable location</string>
+
+    <!-- DeviceList -->
+    <string name="paired_devices">Paired Devices</string>
+    <string name="no_name">(No name)</string>
+    <string name="scanned_devices">Scanned Devices</string>
+    <string name="start_scanning">Start scanning</string>
+    <string name="stop_scanning">Stop scanning</string>
+    <string name="start_server">Start server</string>
+
+    <!-- Chat -->
+    <string name="messages">Messages</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="message">Message</string>
+    <string name="send_message">Send message</string>
+    <string name="loading">Loading…</string>
 </resources>
