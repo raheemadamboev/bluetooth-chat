@@ -36,7 +36,8 @@
         <activity
             android:name=".presentation.activity.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.BluetoothChat">
+            android:theme="@style/Theme.BluetoothChat"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
