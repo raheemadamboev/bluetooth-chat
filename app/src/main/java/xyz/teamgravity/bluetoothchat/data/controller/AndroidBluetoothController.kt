@@ -2,32 +2,25 @@ package xyz.teamgravity.bluetoothchat.data.controller
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.content.Context
-import android.content.IntentFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import xyz.teamgravity.bluetoothchat.core.receiver.BluetoothFoundReceiver
-import xyz.teamgravity.bluetoothchat.core.receiver.BluetoothStateReceiver
 import xyz.teamgravity.bluetoothchat.core.util.PermissionUtil
 import xyz.teamgravity.bluetoothchat.data.mapper.toByteArray
 import xyz.teamgravity.bluetoothchat.data.mapper.toDevice
@@ -49,57 +42,33 @@ class AndroidBluetoothController(
         private const val SERVICE_NAME = "chat_service"
     }
 
-    private val _connected = MutableStateFlow(false)
-    override val connected: StateFlow<Boolean> = _connected.asStateFlow()
-
-    private val _scannedDevices = MutableStateFlow(emptyList<DeviceModel>())
-    override val scannedDevices: StateFlow<List<DeviceModel>> = _scannedDevices.asStateFlow()
-
     private val _pairedDevices = MutableStateFlow(emptyList<DeviceModel>())
     override val pairedDevices: StateFlow<List<DeviceModel>> = _pairedDevices.asStateFlow()
-
-    private val _errors = MutableSharedFlow<String>()
-    override val errors: SharedFlow<String> = _errors.asSharedFlow()
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private var service: BluetoothDataTransferService? = null
     private var serverSocket: BluetoothServerSocket? = null
     private var clientSocket: BluetoothSocket? = null
+    private var getPairedDevicesJob: Job? = null
 
     init {
-        scope.launch {
-            updatePairedDevices()
-            registerBluetoothStateReceiver()
+        cancelAndGetPairedDevices()
+    }
+
+    private fun cancelAndGetPairedDevices() {
+        getPairedDevicesJob?.cancel()
+        getPairedDevicesJob = scope.launch {
+            getPairedDevices()
         }
     }
 
-    private suspend fun updatePairedDevices() {
+    private suspend fun getPairedDevices() {
         if (!PermissionUtil.canBluetoothConnect(context)) return
         val devices = adapter
             ?.bondedDevices
             ?.map { it.toDevice() }
         if (devices != null) _pairedDevices.emit(devices)
-    }
-
-    private fun registerBluetoothStateReceiver() {
-        val filter = IntentFilter()
-        filter.addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)
-        filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
-        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
-        context.registerReceiver(stateReceiver, filter)
-    }
-
-    private fun registerBluetoothFoundReceiver() {
-        context.registerReceiver(foundReceiver, IntentFilter(BluetoothDevice.ACTION_FOUND))
-    }
-
-    private fun unregisterBluetoothStateReceiver() {
-        context.unregisterReceiver(stateReceiver)
-    }
-
-    private fun unregisterBluetoothFoundReceiver() {
-        context.unregisterReceiver(foundReceiver)
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -110,18 +79,8 @@ class AndroidBluetoothController(
         return adapter?.isEnabled ?: false
     }
 
-    override fun startDiscovery() {
-        if (!PermissionUtil.canBluetoothScan(context)) return
-        scope.launch {
-            registerBluetoothFoundReceiver()
-            updatePairedDevices()
-            adapter?.startDiscovery()
-        }
-    }
-
-    override fun stopDiscovery() {
-        if (!PermissionUtil.canBluetoothScan(context)) return
-        adapter?.cancelDiscovery()
+    override fun refreshPairedDevices() {
+        cancelAndGetPairedDevices()
     }
 
     override fun startServer(): Flow<BluetoothController.ConnectionResult> {
@@ -165,8 +124,6 @@ class AndroidBluetoothController(
                 ?.getRemoteDevice(device.address)
                 ?.createRfcommSocketToServiceRecord(UUID.fromString(SERVICE_UUID))
 
-            stopDiscovery()
-
             try {
                 clientSocket?.connect()
                 emit(BluetoothController.ConnectionResult.Established)
@@ -194,12 +151,6 @@ class AndroidBluetoothController(
         clientSocket = null
     }
 
-    override fun release() {
-        unregisterBluetoothStateReceiver()
-        unregisterBluetoothFoundReceiver()
-        close()
-    }
-
     override suspend fun sendMessage(message: String): MessageModel? {
         if (!PermissionUtil.canBluetoothConnect(context)) return null
         if (service == null) return null
@@ -210,23 +161,6 @@ class AndroidBluetoothController(
         )
         val success = service?.sendMessage(model) ?: false
         return if (success) model else null
-    }
-
-    private val foundReceiver = BluetoothFoundReceiver { device ->
-        _scannedDevices.update { devices ->
-            val model = device.toDevice()
-            if (model in devices) devices else devices + model
-        }
-    }
-
-    private val stateReceiver = BluetoothStateReceiver { connected, device ->
-        scope.launch {
-            if (adapter?.bondedDevices?.contains(device) == true) {
-                _connected.emit(connected)
-            } else {
-                _errors.emit("Can't connect to a non-paired device.")
-            }
-        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
