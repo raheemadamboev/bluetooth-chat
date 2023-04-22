@@ -39,6 +39,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.flow.collectLatest
 import xyz.teamgravity.bluetoothchat.R
 import xyz.teamgravity.bluetoothchat.domain.model.DeviceModel
+import xyz.teamgravity.bluetoothchat.presentation.component.keyboardAsState
 import xyz.teamgravity.bluetoothchat.presentation.navigation.MainNavGraph
 import xyz.teamgravity.bluetoothchat.presentation.theme.OldRose
 import xyz.teamgravity.bluetoothchat.presentation.theme.Vanilla
@@ -63,7 +64,7 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(key1 = viewmodel.messages.size) {
+    LaunchedEffect(key1 = viewmodel.messages.size, key2 = keyboardAsState().value) {
         if (viewmodel.messages.isNotEmpty()) state.animateScrollToItem(viewmodel.messages.size - 1)
     }
 
