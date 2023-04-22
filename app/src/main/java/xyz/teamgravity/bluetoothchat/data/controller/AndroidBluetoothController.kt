@@ -10,9 +10,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -71,6 +73,18 @@ class AndroidBluetoothController(
         if (devices != null) _pairedDevices.emit(devices)
     }
 
+    private suspend fun emitAllMessages(collector: FlowCollector<BluetoothController.ConnectionResult>) {
+        collector.emitAll(
+            service!!
+                .getMessages()
+                .catch { e ->
+                    if (e !is IOException) throw e
+                    Timber.e(e)
+                    collector.emit(BluetoothController.ConnectionResult.Error("Connection was interrupted"))
+                }.map { BluetoothController.ConnectionResult.Transferred(it) }
+        )
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // API
     ///////////////////////////////////////////////////////////////////////////
@@ -92,21 +106,18 @@ class AndroidBluetoothController(
 
             serverSocket = adapter?.listenUsingRfcommWithServiceRecord(SERVICE_NAME, UUID.fromString(SERVICE_UUID))
 
-            clientSocket = try {
-                serverSocket?.accept()
+            try {
+                clientSocket = serverSocket?.accept()
+                emit(BluetoothController.ConnectionResult.Established)
+                serverSocket?.close()
+
+                if (clientSocket != null) {
+                    service = BluetoothDataTransferService(clientSocket!!)
+                    emitAllMessages(this)
+                }
             } catch (e: IOException) {
                 Timber.e(e)
-                return@flow
-            }
-            emit(BluetoothController.ConnectionResult.Established)
-            if (clientSocket != null) {
-                serverSocket?.close()
-                service = BluetoothDataTransferService(clientSocket!!)
-                emitAll(
-                    service!!
-                        .getMessages()
-                        .map { BluetoothController.ConnectionResult.Transferred(it) }
-                )
+                emit(BluetoothController.ConnectionResult.Error("Connection was interrupted"))
             }
         }.onCompletion {
             close()
@@ -130,13 +141,10 @@ class AndroidBluetoothController(
 
                 if (clientSocket != null) {
                     service = BluetoothDataTransferService(clientSocket!!)
-                    emitAll(
-                        service!!
-                            .getMessages()
-                            .map { BluetoothController.ConnectionResult.Transferred(it) }
-                    )
+                    emitAllMessages(this)
                 }
             } catch (e: IOException) {
+                Timber.e(e)
                 emit(BluetoothController.ConnectionResult.Error("Connection was interrupted"))
             }
         }.onCompletion {
@@ -187,7 +195,7 @@ class AndroidBluetoothController(
             return flow {
                 if (!socket.isConnected) return@flow
                 val buffer = ByteArray(1024)
-                while (true) {
+                while (socket.isConnected) {
                     val count = socket.inputStream.read(buffer)
                     val message = buffer.toMessage(
                         count = count,
