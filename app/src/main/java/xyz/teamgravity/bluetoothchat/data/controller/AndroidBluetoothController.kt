@@ -104,9 +104,9 @@ class AndroidBluetoothController(
                 return@flow
             }
 
-            serverSocket = adapter?.listenUsingRfcommWithServiceRecord(SERVICE_NAME, UUID.fromString(SERVICE_UUID))
-
             try {
+                serverSocket = adapter?.listenUsingRfcommWithServiceRecord(SERVICE_NAME, UUID.fromString(SERVICE_UUID))
+
                 clientSocket = serverSocket?.accept()
                 emit(BluetoothController.ConnectionResult.Established)
                 serverSocket?.close()
@@ -131,11 +131,11 @@ class AndroidBluetoothController(
                 return@flow
             }
 
-            clientSocket = adapter
-                ?.getRemoteDevice(device.address)
-                ?.createRfcommSocketToServiceRecord(UUID.fromString(SERVICE_UUID))
-
             try {
+                clientSocket = adapter
+                    ?.getRemoteDevice(device.address)
+                    ?.createRfcommSocketToServiceRecord(UUID.fromString(SERVICE_UUID))
+
                 clientSocket?.connect()
                 emit(BluetoothController.ConnectionResult.Established)
 
