@@ -64,7 +64,10 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(key1 = viewmodel.messages.size, key2 = keyboardAsState().value) {
+    LaunchedEffect(
+        key1 = viewmodel.messages.size,
+        key2 = keyboardAsState().value
+    ) {
         if (viewmodel.messages.isNotEmpty()) state.animateScrollToItem(viewmodel.messages.size - 1)
     }
 
