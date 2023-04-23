@@ -80,7 +80,7 @@ class AndroidBluetoothController(
                 .catch { e ->
                     if (e !is IOException) throw e
                     Timber.e(e)
-                    collector.emit(BluetoothController.ConnectionResult.Error("Connection was interrupted"))
+                    collector.emit(BluetoothController.ConnectionResult.Error("Connection was interrupted!"))
                 }.map { BluetoothController.ConnectionResult.Transferred(it) }
         )
     }
@@ -100,7 +100,7 @@ class AndroidBluetoothController(
     override fun startServer(): Flow<BluetoothController.ConnectionResult> {
         return flow {
             if (!PermissionUtil.canBluetoothConnect(context)) {
-                emit(BluetoothController.ConnectionResult.Error("No BLUETOOTH_CONNECT permission"))
+                emit(BluetoothController.ConnectionResult.Error("No BLUETOOTH_CONNECT permission!"))
                 return@flow
             }
 
@@ -117,7 +117,7 @@ class AndroidBluetoothController(
                 }
             } catch (e: IOException) {
                 Timber.e(e)
-                emit(BluetoothController.ConnectionResult.Error("Connection was interrupted"))
+                emit(BluetoothController.ConnectionResult.Error("Connection was interrupted!"))
             }
         }.onCompletion {
             close()
@@ -127,7 +127,7 @@ class AndroidBluetoothController(
     override fun connect(device: DeviceModel): Flow<BluetoothController.ConnectionResult> {
         return flow {
             if (!PermissionUtil.canBluetoothConnect(context)) {
-                emit(BluetoothController.ConnectionResult.Error("No BLUETOOTH_CONNECT permission"))
+                emit(BluetoothController.ConnectionResult.Error("No BLUETOOTH_CONNECT permission!"))
                 return@flow
             }
 
@@ -145,7 +145,7 @@ class AndroidBluetoothController(
                 }
             } catch (e: IOException) {
                 Timber.e(e)
-                emit(BluetoothController.ConnectionResult.Error("Connection was interrupted"))
+                emit(BluetoothController.ConnectionResult.Error("Connection was interrupted!"))
             }
         }.onCompletion {
             close()
@@ -193,7 +193,6 @@ class AndroidBluetoothController(
 
         fun getMessages(): Flow<MessageModel> {
             return flow {
-                if (!socket.isConnected) return@flow
                 val buffer = ByteArray(1024)
                 while (socket.isConnected) {
                     val count = socket.inputStream.read(buffer)
