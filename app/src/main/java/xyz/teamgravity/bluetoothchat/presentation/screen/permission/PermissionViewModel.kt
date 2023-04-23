@@ -15,7 +15,7 @@ class PermissionViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        val BLUETOOTH_PERMISSIONS = listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        val BLUETOOTH_PERMISSIONS = listOf(Manifest.permission.BLUETOOTH_CONNECT)
         val LOCATION_PERMISSIONS = listOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
     }
 

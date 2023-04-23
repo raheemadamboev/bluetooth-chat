@@ -17,11 +17,4 @@ object PermissionUtil {
         }
         return true
     }
-
-    fun canBluetoothScan(context: Context): Boolean {
-        if (BuildUtil.deviceAtLeastS()) {
-            return ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
-        }
-        return true
-    }
 }
