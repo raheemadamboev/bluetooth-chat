@@ -44,8 +44,8 @@ class ChatViewModel @Inject constructor(
 
     private fun getMessages() {
         viewModelScope.launch {
-            val messageFlow = if (args.device == null) controller.startServer() else controller.connect(args.device)
-            messageFlow.collectLatest { result ->
+            val flow = if (args.device == null) controller.startServer() else controller.connect(args.device)
+            flow.collectLatest { result ->
                 when (result) {
                     BluetoothController.ConnectionResult.Established -> {
                         connecting = false
